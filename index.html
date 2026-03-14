@@ -331,17 +331,43 @@
     }
 
     const obstacleTypes = [
-      { name: "Kužel", color: "#ff9f43", minWidth: 24, maxWidth: 40, minHeight: 40, maxHeight: 70, ground: true },
-      { name: "Papírování", color: "#fd79a8", minWidth: 30, maxWidth: 65, minHeight: 25, maxHeight: 45, ground: true },
-      { name: "Bouřka", color: "#74b9ff", minWidth: 40, maxWidth: 60, minHeight: 50, maxHeight: 80, ground: false },
-      { name: "Zácpa", color: "#ffeaa7", minWidth: 35, maxWidth: 70, minHeight: 30, maxHeight: 60, ground: true }
+      // nižší, dobře přeskočitelné překážky na zemi
+      { name: "Kužel", color: "#ff9f43", minWidth: 24, maxWidth: 40, minHeight: 35, maxHeight: 60, ground: true },
+      { name: "Papírování", color: "#fd79a8", minWidth: 30, maxWidth: 60, minHeight: 20, maxHeight: 40, ground: true },
+      { name: "Zácpa", color: "#ffeaa7", minWidth: 40, maxWidth: 70, minHeight: 30, maxHeight: 55, ground: true },
+      // “bouřka” ve vzduchu – vždy dost vysoko, aby se dalo proběhnout pod ní
+      { name: "Bouřka", color: "#74b9ff", minWidth: 40, maxWidth: 60, minHeight: 35, maxHeight: 55, ground: false }
     ];
     function spawnObstacle() {
-      const t = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+      const groundTypes = obstacleTypes.filter(t => t.ground);
+      const airTypes = obstacleTypes.filter(t => !t.ground);
+      const easyPhase = state.score < 400; // první část hry jen snadné překážky
+
+      let pool;
+      if (easyPhase) {
+        pool = groundTypes; // žádné “bouřky” na začátku
+      } else {
+        // po chvíli mícháme vše, ale vzdušné překážky už jsou vždy vysoko
+        pool = obstacleTypes;
+      }
+
+      const t = pool[Math.floor(Math.random() * pool.length)];
       const width = t.minWidth + Math.random() * (t.maxWidth - t.minWidth);
       const height = t.minHeight + Math.random() * (t.maxHeight - t.minHeight);
       const groundY = canvasHeight - GAME_CONFIG.groundHeight;
-      const y = t.ground ? groundY - height : groundY - height - (30 + Math.random() * 40);
+
+      let y;
+      if (t.ground) {
+        // klasická překážka na zemi
+        y = groundY - height;
+      } else {
+        // vzdušná překážka: necháme pod ní dost místa pro proběhnutí
+        const minGap = state.player.height + 22; // mezera nad hráčem
+        const bottomY = groundY - minGap;
+        const maxHeight = Math.min(height, bottomY - 40); // malý odstup od horního okraje
+        y = bottomY - maxHeight;
+      }
+
       const speed = GAME_CONFIG.obstacleSpeedBase + GAME_CONFIG.obstacleSpeedIncrease * state.score;
       state.obstacles.push({ x: canvasWidth + 20, y, width, height, speed, type: t.name, color: t.color });
     }
