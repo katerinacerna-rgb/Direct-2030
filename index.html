@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8" />
-  <title>Direct Jump 2030</title>
+  <title>Skákej do roku 2030 s Kateřinou</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <style>
     :root {
@@ -185,8 +185,8 @@
     <header>
       <div class="brand">
         <div class="brand-text">
-          <strong>Direct Jump</strong>
-          <span>do roku 2030</span>
+          <strong>Skákej do roku 2030</strong>
+          <span>s Kateřinou</span>
         </div>
       </div>
       <div class="status-bar">
@@ -238,6 +238,10 @@
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    // jednoduchá smyčka s hudbou na pozadí (soubor game-music.mp3 ve stejné složce)
+    const bgMusic = new Audio("game-music.mp3");
+    bgMusic.loop = true;
+    let musicEnabled = true;
     let canvasWidth = 640, canvasHeight = 480;
 
     function resizeCanvas() {
@@ -382,7 +386,13 @@
       }
     }
     document.addEventListener("keydown", function(e) {
-      if (e.code === "Space") { e.preventDefault(); if (!state.running && !state.gameOver) startGame(); else doJump(); }
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!state.running && !state.gameOver) startGame(); else doJump();
+      }
+      if (e.key === "m" || e.key === "M") {
+        toggleMusic();
+      }
     });
     document.addEventListener("mousedown", function(e) {
       if (e.button === 0) { if (!state.running && !state.gameOver) startGame(); else doJump(); }
@@ -408,11 +418,26 @@
       scoreLabel.textContent = "0";
       showIntroOverlay();
     }
+    function tryPlayMusic() {
+      if (!musicEnabled) return;
+      bgMusic.play().catch(() => {
+        // když prohlížeč nedovolí autoplay, nic se neděje
+      });
+    }
+    function toggleMusic() {
+      musicEnabled = !musicEnabled;
+      if (musicEnabled) {
+        tryPlayMusic();
+      } else {
+        bgMusic.pause();
+      }
+    }
     function startGame() {
       overlay.style.display = "none";
       state.running = true;
       state.gameOver = false;
       state.lastTimestamp = performance.now();
+      tryPlayMusic();
       requestAnimationFrame(loop);
     }
     function loop(timestamp) {
@@ -523,7 +548,7 @@
 
     function showIntroOverlay() {
       overlay.style.display = "flex";
-      overlayContent.innerHTML = '<h1>Skákej do roku 2030</h1><p>Vyhýbej se překážkám a dostaň se co nejdál.</p><ul><li>Mezerník, klik nebo tap = skok (můžeš skočit i dvakrát ve vzduchu)</li></ul><div class="btn-row"><button class="primary" id="startBtn">Začít</button></div>';
+      overlayContent.innerHTML = '<h1>Skákej do roku 2030 s Kateřinou</h1><p>Vyhýbej se překážkám a dostaň se co nejdál.</p><ul><li>Mezerník, klik nebo tap = skok (můžeš skočit i dvakrát ve vzduchu)</li><li>Hudbu můžeš kdykoli vypnout klávesou M</li></ul><div class="btn-row"><button class="primary" id="startBtn">Začít</button></div>';
       document.getElementById("startBtn").onclick = function() { startGame(); };
     }
     function showGameOverOverlay() {
