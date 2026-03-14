@@ -222,12 +222,14 @@
       gravity: 0.5,
       jumpStrength: 10.5,
       groundHeight: 72,
-      obstacleIntervalMin: 950,
-      obstacleIntervalMax: 1650,
-      obstacleSpeedBase: 4,
-      obstacleSpeedIncrease: 0.004,
+      obstacleIntervalMin: 1100,
+      obstacleIntervalMax: 2000,
+      // pomalejší začátek
+      obstacleSpeedBase: 3,
+      // velmi pozvolné zrychlování – zhruba přes minutu
+      obstacleSpeedIncrease: 0.00005,
       maxYear: 2030,
-      scorePerSecond: 10,
+      scorePerSecond: 8,
       // nový klíč = staré výsledky se nečtou
       localStorageKey: "direct_jump_2030_leaderboard_v2",
       maxLeaderboardEntries: 10
@@ -358,7 +360,8 @@
     document.addEventListener("mousedown", function(e) {
       if (e.button === 0) { if (!state.running && !state.gameOver) startGame(); else doJump(); }
     });
-    document.addEventListener("touchstart", function(e) {
+    // Na mobilu posloucháme jen na plátně hry, aby šly kliknout tlačítka v overlayi
+    canvas.addEventListener("touchstart", function(e) {
       e.preventDefault();
       if (!state.running && !state.gameOver) startGame(); else doJump();
     }, { passive: false });
@@ -493,7 +496,7 @@
 
     function showIntroOverlay() {
       overlay.style.display = "flex";
-      overlayContent.innerHTML = '<h1>Skákej s Directem do roku 2030</h1><p>Logo Direct pojišťovny skáče přes překážky. Cíl: 2030.</p><ul><li>Mezerník, klik nebo tap = skok (můžeš skočit i dvakrát ve vzduchu)</li></ul><div class="btn-row"><button class="primary" id="startBtn">Začít</button></div>';
+      overlayContent.innerHTML = '<h1>Skákej do roku 2030</h1><p>Vyhýbej se překážkám a dostaň se co nejdál.</p><ul><li>Mezerník, klik nebo tap = skok (můžeš skočit i dvakrát ve vzduchu)</li></ul><div class="btn-row"><button class="primary" id="startBtn">Začít</button></div>';
       document.getElementById("startBtn").onclick = function() { startGame(); };
     }
     function showGameOverOverlay() {
