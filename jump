@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <title>Direct Jump 2030</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020409;
+      --accent: #c4ff23;
+      --accent-dark: #003326;
+      --text: #e9f5f2;
+      --danger: #ff4e6a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #021920 0, #020409 55%, #000 100%);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .shell {
+      width: min(100vw, 960px);
+      height: min(100vh, 640px);
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 24px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(196, 255, 35, 0.12);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: linear-gradient(90deg, #020409, #021919);
+      border-bottom: 1px solid rgba(196, 255, 35, 0.25);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-text { font-size: 13px; line-height: 1.2; }
+    .brand-text strong { font-weight: 700; }
+    .brand-text span { opacity: 0.7; }
+    .status-bar { display: flex; align-items: center; gap: 16px; font-size: 13px; flex-wrap: wrap; }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(196, 255, 35, 0.07);
+      border: 1px solid rgba(196, 255, 35, 0.25);
+    }
+    .status-label { text-transform: uppercase; font-size: 10px; letter-spacing: 0.12em; opacity: 0.7; }
+    .status-value { font-variant-numeric: tabular-nums; }
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+      gap: 0;
+    }
+    @media (max-width: 720px) {
+      main { grid-template-columns: 1fr; grid-template-rows: auto auto; }
+    }
+    .game-wrapper {
+      position: relative;
+      background: radial-gradient(circle at top, #061618 0, #01060c 65%, #000 100%);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+    @media (max-width: 720px) {
+      .game-wrapper { border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.08); min-height: 260px; }
+    }
+    canvas { width: 100%; height: 100%; display: block; }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .overlay-content {
+      pointer-events: auto;
+      background: rgba(0, 4, 4, 0.95);
+      border-radius: 20px;
+      padding: 22px;
+      max-width: 360px;
+      width: min(92%, 360px);
+      border: 1px solid rgba(196, 255, 35, 0.65);
+      box-shadow: 0 16px 60px rgba(0, 0, 0, 0.9);
+      text-align: left;
+    }
+    .overlay h1, .overlay h2 { font-size: 20px; margin-bottom: 8px; }
+    .overlay p { font-size: 14px; line-height: 1.5; opacity: 0.85; margin-bottom: 12px; }
+    .overlay ul { list-style: none; margin: 0 0 12px; padding: 0; font-size: 13px; opacity: 0.9; }
+    .overlay ul li::before { content: "• "; color: var(--accent); }
+    .overlay small { display: block; font-size: 11px; opacity: 0.6; margin-top: 4px; }
+    .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 9px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    button.primary {
+      background: linear-gradient(135deg, var(--accent), #d4ff61);
+      color: #020409;
+      box-shadow: 0 8px 25px rgba(196, 255, 35, 0.4);
+    }
+    button.primary:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(196, 255, 35, 0.55); }
+    button.secondary {
+      background: rgba(4, 24, 20, 0.9);
+      color: var(--text);
+      border: 1px solid rgba(196, 255, 35, 0.4);
+    }
+    button.secondary:hover { background: rgba(8, 34, 30, 1); }
+    button:active { transform: translateY(1px); }
+    .controls-hint { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+    .leaderboard { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+    .leaderboard-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .leaderboard-header h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.16em; opacity: 0.9; }
+    .leaderboard-header span { font-size: 11px; opacity: 0.6; }
+    .leaderboard-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border-radius: 14px;
+      background: rgba(0, 10, 6, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      max-height: 280px;
+      overflow: auto;
+    }
+    .leaderboard-item {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 11px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-variant-numeric: tabular-nums;
+    }
+    .leaderboard-item:last-child { border-bottom: none; }
+    .leaderboard-rank { font-size: 12px; opacity: 0.65; }
+    .leaderboard-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .leaderboard-meta { font-size: 11px; opacity: 0.6; }
+    .leaderboard-score { font-weight: 600; }
+    .leaderboard-empty { padding: 12px; font-size: 12px; opacity: 0.7; text-align: center; }
+    .footer-info { font-size: 11px; opacity: 0.6; margin-top: 4px; }
+    .input-row { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+    label { font-size: 12px; opacity: 0.8; }
+    input[type="text"] {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 7px 10px;
+      background: rgba(1, 8, 6, 0.96);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+    input[type="text"]:focus {
+      border-color: rgba(196, 255, 35, 0.8);
+      box-shadow: 0 0 0 1px rgba(196, 255, 35, 0.5);
+    }
+    .pill-goal { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.04); font-size: 11px; }
+    .pill-goal .target { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="brand-text">
+          <strong>Direct Jump</strong>
+          <span>do roku 2030</span>
+        </div>
+      </div>
+      <div class="status-bar">
+        <div class="status-pill">
+          <span class="status-label">Skóre</span>
+          <span class="status-value" id="scoreLabel">0</span>
+        </div>
+        <div class="status-pill">
+          <span class="pill-goal">Cíl: <span class="target">2030</span></span>
+        </div>
+      </div>
+    </header>
+    <main>
+      <section class="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div class="overlay" id="overlay">
+          <div class="overlay-content" id="overlayContent"></div>
+        </div>
+      </section>
+      <aside class="leaderboard">
+        <div class="leaderboard-header">
+          <h3>Hall of Fame</h3>
+          <span>Top 10</span>
+        </div>
+        <ul class="leaderboard-list" id="leaderboardList"></ul>
+        <div class="footer-info">Skákej: mezerník, klik nebo tap. Výsledky jen v tomto prohlížeči.</div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const GAME_CONFIG = {
+      gravity: 0.5,
+      jumpStrength: 10.5,
+      groundHeight: 72,
+      obstacleIntervalMin: 950,
+      obstacleIntervalMax: 1650,
+      obstacleSpeedBase: 4,
+      obstacleSpeedIncrease: 0.004,
+      maxYear: 2030,
+      scorePerSecond: 10,
+      // nový klíč = staré výsledky se nečtou
+      localStorageKey: "direct_jump_2030_leaderboard_v2",
+      maxLeaderboardEntries: 10
+    };
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    let canvasWidth = 640, canvasHeight = 480;
+
+    function resizeCanvas() {
+      const wrapper = canvas.parentElement;
+      const w = wrapper.clientWidth, h = wrapper.clientHeight;
+      const targetRatio = 16 / 9;
+      let cw = w, ch = cw / targetRatio;
+      if (ch > h) { ch = h; cw = ch * targetRatio; }
+      canvasWidth = cw;
+      canvasHeight = ch;
+      canvas.width = cw * window.devicePixelRatio;
+      canvas.height = ch * window.devicePixelRatio;
+      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+    }
+    window.addEventListener("resize", resizeCanvas);
+
+    let state = {
+      running: false,
+      gameOver: false,
+      score: 0,
+      year: GAME_CONFIG.maxYear,
+      lastTimestamp: 0,
+      timeSinceLastObstacle: 0,
+      obstacles: [],
+      player: { x: 80, y: 0, width: 110, height: 50, vy: 0, onGround: false, pulse: 0, jumpsLeft: 2 }
+    };
+
+    const logoImg = new Image();
+    logoImg.src = "logo-direct.png";
+
+    const overlay = document.getElementById("overlay");
+    const overlayContent = document.getElementById("overlayContent");
+    const scoreLabel = document.getElementById("scoreLabel");
+    const leaderboardList = document.getElementById("leaderboardList");
+
+    function loadLeaderboard() {
+      try {
+        const raw = localStorage.getItem(GAME_CONFIG.localStorageKey);
+        if (!raw) return [];
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch { return []; }
+    }
+    function saveLeaderboard(entries) {
+      try { localStorage.setItem(GAME_CONFIG.localStorageKey, JSON.stringify(entries)); } catch {}
+    }
+    function addScoreToLeaderboard(name, score) {
+      const entries = loadLeaderboard();
+      entries.push({ name: name || "Neznámý", score, timestamp: Date.now() });
+      entries.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.timestamp - b.timestamp;
+      });
+      const trimmed = entries.slice(0, GAME_CONFIG.maxLeaderboardEntries);
+      saveLeaderboard(trimmed);
+      return trimmed;
+    }
+    function renderLeaderboard() {
+      const entries = loadLeaderboard();
+      leaderboardList.innerHTML = "";
+      if (!entries.length) {
+        const li = document.createElement("li");
+        li.className = "leaderboard-empty";
+        li.textContent = "Zatím nikdo. Buď první!";
+        leaderboardList.appendChild(li);
+        return;
+      }
+      entries.forEach((entry, i) => {
+        const li = document.createElement("li");
+        li.className = "leaderboard-item";
+        const rank = document.createElement("div");
+        rank.className = "leaderboard-rank";
+        rank.textContent = "#" + (i + 1);
+        const main = document.createElement("div");
+        const name = document.createElement("div");
+        name.className = "leaderboard-name";
+        name.textContent = entry.name;
+        const meta = document.createElement("div");
+        meta.className = "leaderboard-meta";
+        meta.textContent = new Date(entry.timestamp).toLocaleDateString("cs-CZ", { day: "2-digit", month: "2-digit", year: "2-digit" });
+        main.appendChild(name);
+        main.appendChild(meta);
+        const scoreEl = document.createElement("div");
+        scoreEl.className = "leaderboard-score";
+        scoreEl.textContent = Math.round(entry.score) + " b.";
+        li.appendChild(rank);
+        li.appendChild(main);
+        li.appendChild(scoreEl);
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    const obstacleTypes = [
+      { name: "Kužel", color: "#ff9f43", minWidth: 24, maxWidth: 40, minHeight: 40, maxHeight: 70, ground: true },
+      { name: "Papírování", color: "#fd79a8", minWidth: 30, maxWidth: 65, minHeight: 25, maxHeight: 45, ground: true },
+      { name: "Bouřka", color: "#74b9ff", minWidth: 40, maxWidth: 60, minHeight: 50, maxHeight: 80, ground: false },
+      { name: "Zácpa", color: "#ffeaa7", minWidth: 35, maxWidth: 70, minHeight: 30, maxHeight: 60, ground: true }
+    ];
+    function spawnObstacle() {
+      const t = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+      const width = t.minWidth + Math.random() * (t.maxWidth - t.minWidth);
+      const height = t.minHeight + Math.random() * (t.maxHeight - t.minHeight);
+      const groundY = canvasHeight - GAME_CONFIG.groundHeight;
+      const y = t.ground ? groundY - height : groundY - height - (30 + Math.random() * 40);
+      const speed = GAME_CONFIG.obstacleSpeedBase + GAME_CONFIG.obstacleSpeedIncrease * state.score;
+      state.obstacles.push({ x: canvasWidth + 20, y, width, height, speed, type: t.name, color: t.color });
+    }
+
+    function doJump() {
+      if (!state.running || state.gameOver) return;
+      if (state.player.jumpsLeft > 0) {
+        state.player.vy = -GAME_CONFIG.jumpStrength;
+        state.player.onGround = false;
+        state.player.pulse = 1;
+        state.player.jumpsLeft -= 1;
+      }
+    }
+    document.addEventListener("keydown", function(e) {
+      if (e.code === "Space") { e.preventDefault(); if (!state.running && !state.gameOver) startGame(); else doJump(); }
+    });
+    document.addEventListener("mousedown", function(e) {
+      if (e.button === 0) { if (!state.running && !state.gameOver) startGame(); else doJump(); }
+    });
+    document.addEventListener("touchstart", function(e) {
+      e.preventDefault();
+      if (!state.running && !state.gameOver) startGame(); else doJump();
+    }, { passive: false });
+
+    function resetGame() {
+      state.running = false;
+      state.gameOver = false;
+      state.score = 0;
+      state.lastTimestamp = 0;
+      state.timeSinceLastObstacle = 0;
+      state.obstacles = [];
+      state.player.y = canvasHeight - GAME_CONFIG.groundHeight - state.player.height;
+      state.player.vy = 0;
+      state.player.onGround = true;
+      state.player.pulse = 0;
+      state.player.jumpsLeft = 2;
+      scoreLabel.textContent = "0";
+      showIntroOverlay();
+    }
+    function startGame() {
+      overlay.style.display = "none";
+      state.running = true;
+      state.gameOver = false;
+      state.lastTimestamp = performance.now();
+      requestAnimationFrame(loop);
+    }
+    function loop(timestamp) {
+      if (!state.running) return;
+      const dt = (timestamp - state.lastTimestamp) / 1000;
+      state.lastTimestamp = timestamp;
+      update(dt);
+      draw();
+      if (state.running) requestAnimationFrame(loop);
+    }
+    function update(dt) {
+      state.score += dt * GAME_CONFIG.scorePerSecond * 60;
+      scoreLabel.textContent = Math.round(state.score);
+      const groundY = canvasHeight - GAME_CONFIG.groundHeight - state.player.height;
+      state.player.vy += GAME_CONFIG.gravity;
+      state.player.y += state.player.vy;
+      if (state.player.y >= groundY) {
+        state.player.y = groundY;
+        state.player.vy = 0;
+        state.player.onGround = true;
+        state.player.jumpsLeft = 2;
+      }
+      if (state.player.pulse > 0) state.player.pulse = Math.max(0, state.player.pulse - dt * 3);
+      state.timeSinceLastObstacle += dt * 1000;
+      const interval = GAME_CONFIG.obstacleIntervalMin + Math.random() * (GAME_CONFIG.obstacleIntervalMax - GAME_CONFIG.obstacleIntervalMin) * (1 - Math.min(state.score / 2000, 0.6));
+      if (state.timeSinceLastObstacle >= interval) { state.timeSinceLastObstacle = 0; spawnObstacle(); }
+      state.obstacles.forEach(function(o) { o.x -= o.speed; });
+      state.obstacles = state.obstacles.filter(function(o) { return o.x + o.width > -40; });
+      for (var i = 0; i < state.obstacles.length; i++) {
+        if (checkCollision(state.player, state.obstacles[i])) { handleHit(); break; }
+      }
+    }
+    function checkCollision(player, obstacle) {
+      const px = player.x + 18, py = player.y + 10, pw = player.width - 36, ph = player.height - 20;
+      return px < obstacle.x + obstacle.width && px + pw > obstacle.x && py < obstacle.y + obstacle.height && py + ph > obstacle.y;
+    }
+    function handleHit() {
+      endGame();
+    }
+    function endGame() {
+      state.running = false;
+      state.gameOver = true;
+      showGameOverOverlay();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+      gradient.addColorStop(0, "#021b1f");
+      gradient.addColorStop(0.55, "#010812");
+      gradient.addColorStop(1, "#000000");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      const groundY = canvasHeight - GAME_CONFIG.groundHeight;
+      ctx.fillStyle = "#021a12";
+      ctx.fillRect(0, groundY, canvasWidth, GAME_CONFIG.groundHeight);
+      ctx.fillStyle = "#043522";
+      for (let x = 0; x < canvasWidth; x += 32) ctx.fillRect(x, groundY, 16, 4);
+      state.obstacles.forEach(function(o) {
+        ctx.fillStyle = o.color;
+        roundedRect(ctx, o.x, o.y, o.width, o.height, 6);
+        ctx.fill();
+        ctx.fillStyle = "rgba(0,0,0,0.15)";
+        ctx.fillRect(o.x + 4, o.y + 6, o.width - 8, 3);
+      });
+      const p = state.player;
+      const t = performance.now() / 1000;
+      const pulseScale = 1 + 0.04 * Math.sin(t * 6) + 0.08 * p.pulse;
+      const shadowY = canvasHeight - GAME_CONFIG.groundHeight + 8;
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.beginPath();
+      ctx.ellipse(p.x + p.width / 2, shadowY, p.width / 2.2, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
+      ctx.scale(pulseScale, pulseScale);
+      ctx.translate(-p.width / 2, -p.height / 2);
+      if (logoImg.complete && logoImg.naturalWidth > 0) {
+        // bílá podložka pod logo pro lepší čitelnost
+        ctx.fillStyle = "white";
+        roundedRect(ctx, 0, 0, p.width, p.height, 14);
+        ctx.fill();
+        ctx.drawImage(logoImg, 0, 0, p.width, p.height);
+      } else {
+        const grad = ctx.createLinearGradient(0, 0, p.width, p.height);
+        grad.addColorStop(0, "#c4ff23");
+        grad.addColorStop(1, "#025932");
+        ctx.fillStyle = grad;
+        roundedRect(ctx, 0, 0, p.width, p.height, 14);
+        ctx.fill();
+        ctx.fillStyle = "#001f12";
+        ctx.font = "bold 18px system-ui";
+        ctx.textBaseline = "middle";
+        ctx.fillText("direct", 20, p.height / 2);
+      }
+      ctx.restore();
+    }
+    function roundedRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    }
+
+    function showIntroOverlay() {
+      overlay.style.display = "flex";
+      overlayContent.innerHTML = '<h1>Skákej s Directem do roku 2030</h1><p>Logo Direct pojišťovny skáče přes překážky. Cíl: 2030.</p><ul><li>Mezerník, klik nebo tap = skok (můžeš skočit i dvakrát ve vzduchu)</li></ul><div class="btn-row"><button class="primary" id="startBtn">Začít</button></div>';
+      document.getElementById("startBtn").onclick = function() { startGame(); };
+    }
+    function showGameOverOverlay() {
+      overlay.style.display = "flex";
+      const finalScore = Math.round(state.score);
+      overlayContent.innerHTML = '<h2>Konec hry</h2><p>Skóre <strong>' + finalScore + '</strong>.</p><div class="input-row"><label for="playerName">Podpis:</label><input type="text" id="playerName" maxlength="24" placeholder="Jméno" /></div><div class="btn-row"><button class="primary" id="saveScoreBtn">Uložit</button><button class="secondary" id="skipSaveBtn">Hrát znovu</button></div>';
+      document.getElementById("saveScoreBtn").onclick = function() {
+        const name = (document.getElementById("playerName").value || "").trim() || "Neznámý";
+        addScoreToLeaderboard(name, finalScore);
+        renderLeaderboard();
+        overlayContent.innerHTML = '<h2>Uloženo</h2><p><strong>' + name + '</strong>, skóre ' + finalScore + '.</p><div class="btn-row"><button class="primary" id="playAgainBtn">Hrát znovu</button></div>';
+        document.getElementById("playAgainBtn").onclick = function() { resetGame(); };
+      };
+      document.getElementById("skipSaveBtn").onclick = function() { resetGame(); };
+    }
+
+    function init() {
+      resizeCanvas();
+      renderLeaderboard();
+      resetGame();
+    }
+    document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
