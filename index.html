@@ -222,14 +222,15 @@
       gravity: 0.5,
       jumpStrength: 10.5,
       groundHeight: 72,
-      obstacleIntervalMin: 1100,
-      obstacleIntervalMax: 2000,
-      // pomalejší začátek
-      obstacleSpeedBase: 3,
-      // velmi pozvolné zrychlování – zhruba přes minutu
-      obstacleSpeedIncrease: 0.00005,
+      // překážky o něco častěji
+      obstacleIntervalMin: 900,
+      obstacleIntervalMax: 1700,
+      // svižnější, ale ne extrémní začátek
+      obstacleSpeedBase: 3.8,
+      // postupné zrychlování v průběhu hry
+      obstacleSpeedIncrease: 0.00018,
       maxYear: 2030,
-      scorePerSecond: 8,
+      scorePerSecond: 9,
       // nový klíč = staré výsledky se nečtou
       localStorageKey: "direct_jump_2030_leaderboard_v2",
       maxLeaderboardEntries: 10
